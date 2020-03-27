@@ -17,8 +17,8 @@ A typical way to do this would be to
 1. :meth:`recapitate` : The simulation has likely not reached demographic equilibrium - it has not *coalesced* entirely;
    recapitation uses coalescent simulation to provide a "prior history" for the initial generation of the simulation.
 
-1. :meth:`simplify` : For efficiency, subset the tree sequence to only the information relevant for those 1,000 individuals.
-   This needs to come *after* simplification.
+2. :meth:`simplify` : For efficiency, subset the tree sequence to only the information relevant for those 1,000 individuals.
+   This needs to come *after* recapitation.
 
 3. :meth:`mutate` : This adds neutral mutations on top of the tree sequence.
 
@@ -28,10 +28,25 @@ These steps are described below.
 Recapitation
 ************
 
+.. figure:: _static/pedigree_recapitate.png
+   :scale: 42%
+   :align: right
+
 Although we can initialize a SLiM simulation with the results of a coalescent simulation,
 if during the simulation we don't actually use the genotypes for anything, it can be much
 more efficient to only coalesce the portions of the first-generation ancestors that have
 not yet coalesced. (See the SLiM manual for more explanation.)
+This is depicted in the figure at the right:
+imagine that the common ancestors of all samples did not exist at all sites within the
+SLiM simulation. Recapitation starts at the *top* of the genealogies,
+and runs a coalescent simulation back through time
+to fill out the rest of genealogical history relevant to the samples.
+The purple nodes are new ancestral genomes that have been added to the simulation.
+This is important - if we did not do this,
+then effectively the initial population would be genetically homogeneous,
+and so our simulation would have less genetic variation than it should have
+(since the component of variation from the initial population would be omitted).
+
 Doing this is as simple as:
 
 .. code-block:: python
@@ -45,19 +60,57 @@ you must set migration rates or else coalescence will never happen
 (see :meth:`SlimTreeSequence.recapitate` for more).
 
 
+**************
+Simplification
+**************
+
+.. figure:: _static/pedigree_simplify.png
+   :scale: 42%
+   :align: right
+
+In this example, we imagine that we have many more individuals in the simulation
+than we actually want to analyze.
+We can get rid of the extra information using an operation called *simplification*.
+This is depicted in the figure at the right:
+we have only retained information relevant to the genealogies of the remaining samples,
+substantially simplifying the tree sequence.
+While simplification sounds very appealing - it makes things simpler after all -
+it is often not necessary in practice, because tree sequences are very compact,
+and many operations with them are quite fast.
+So, you should probably not make simplification a standard step in your workflow,
+only using it if necessary.
+
+Simplification to the samples of 1,000 individuals alive today
+can be done with the :meth:`tskit.TreeSequence.simplify` method:
+
+.. code-block:: python
+
+   keep_indivs = np.random.choice(ts.individuals_alive_at(0), 1000)
+   keep_nodes = np.fromiter([ts.individual(i).nodes for i in keep_indivs], dtype='int')
+   sts = ts.simplify(keep_nodes)
+
+**Note** that you must pass simplify a list of *node IDs*, not individual IDs.
+
+
 *********************************************
 Adding neutral mutations to a SLiM simulation
 *********************************************
 
-If you have recorded a tree sequence in SLiM, likely you have not included any neutral mutations.
+.. figure:: _static/pedigree_mutate.png
+   :scale: 42%
+   :align: right
+
+If you have recorded a tree sequence in SLiM, likely you have not included any neutral mutations,
+since it is much more efficient to simply add these on afterwards.
 To add these (in a completely equivalent way to having included them during the simulation),
 you can use the :meth:`msprime.mutate` function, which returns a new tree sequence with additional mutations.
+Continuing with the cartoons from above, these are added to each branch of the tree sequence
+at the rate per unit time that you request.
 This works as follows:
 
 .. code-block:: python
 
-   ts = pyslim.load("unmutated.trees")
-   mut_ts = pyslim.SlimTreeSequence(msprime.mutate(ts, rate=1e-8, keep=True))
+   mut_ts = pyslim.SlimTreeSequence(msprime.mutate(sts, rate=1e-8, keep=True))
 
 
 This will add infinite-sites mutations at a rate of 1e-8 per site, and will
@@ -69,6 +122,7 @@ defined by ``pyslim``. (The conversion does not modify the tree sequence at all,
 it only adds the ``.slim_generation`` attribute.) The output of other ``msprime``
 functions that return tree sequences may be converted back to
 :class:`pyslim.SlimTreeSequence` in the same way.
+
 
 
 *********************

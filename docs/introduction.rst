@@ -98,7 +98,8 @@ There are *three* ways an individual might be in the tree sequence.
    Their nodes are also samples.
 
 3. *The initial population:*
-   Everyone who was alive at the *start* of the simulation.
+   Everyone who was alive at the *start* of the simulation,
+   whether or not they are ancestral to the final population.
    Their nodes are *not* samples.
 
 This last category is a common source of confusion:

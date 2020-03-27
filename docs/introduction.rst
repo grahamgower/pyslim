@@ -32,8 +32,9 @@ and definitions of the important terms.
 Each (haploid) genome is associated with a *node*,
 and the "focal" nodes are called *samples*.
 Many operations act by default on the samples;
-and the tree sequence always describes the entire genome of a sample
-(unlike other, ancestral nodes, about which we might have only partial information).
+and the tree sequence always describes the entire genome of a sample.
+(Other nodes in the tree sequence represent ancestral chromosomes
+about which we might have only partial information).
 SLiM is diploid, so each *individual* has two nodes;
 many operations you might want to do involve first finding the individuals you want,
 and then looking at their nodes.
@@ -49,9 +50,13 @@ the picture on the left below.
 Note that individuals are diploid (each has two chromosomes, or *nodes*),
 and that genealogical relationships are between the *nodes*, not the individuals.
 However, after we're done we are mainly interested in the genealogies
-of the *final* generation, and so we end up with something more like
+of the *final* generation, and so as SLiM goes along it
+*simplifies* the tree sequence,
+retaining only information necessary to describe the genealogies
+of certain individuals.
+At the end, we get a tree sequence that looks something like
 the situation on the right,
-without all the nodes and most of the individuals.
+in which many of the nodes and individuals have been removed.
 
 .. figure:: _static/pedigree0.png
    :scale: 42%
@@ -68,7 +73,10 @@ without all the nodes and most of the individuals.
 Who is in the tree sequence?
 ****************************
 
-In the picture above there were individuals pictured
+OK, but who *is* left in the tree sequence?
+We clearly want all individuals of the *final* generation
+to have their genealogies recorded in the tree sequence.
+But, in the picture above there were individuals pictured
 in the tree sequence that were not alive at the end of the simulation.
 Who are they?
 Which individuals *are* present in a SLiM-produced tree sequence?
